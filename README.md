@@ -1,8 +1,8 @@
 <div align="center">
 
-# 👀 Olhaí
+# 🏙️ Cidade Viva
 
-**Viu um problema na rua? Olhaí.**
+**Viu um problema na rua? Cidade Viva.**
 
 Plataforma open source para reportar, acompanhar e cobrar a resolução de problemas urbanos, com deduplicação geoespacial, modo offline e painel público de transparência.
 
@@ -19,120 +19,106 @@ Plataforma open source para reportar, acompanhar e cobrar a resolução de probl
 
 ## O problema
 
-Buraco na rua, poste apagado, lixo acumulado, bueiro aberto. As reclamações se perdem em canais diferentes, ninguém enxerga o padrão e o cidadão nunca sabe se o problema foi resolvido.
+Buracos nas ruas, postes apagados, lixo acumulado e bueiros abertos. As reclamações se perdem em canais diferentes, ninguém enxerga os padrões e o cidadão muitas vezes não sabe se o problema foi resolvido.
 
 ## A solução
 
-O cidadão reporta em segundos (foto + GPS). O Olhaí:
+O cidadão registra uma ocorrência em segundos, utilizando uma foto e a localização GPS.
 
-- **Junta reportes iguais** em vez de criar duplicatas
-- **Encaminha ao órgão certo** pela área de cobertura
-- **Acompanha cada mudança de status** com histórico imutável
-- **Funciona offline**, porque o problema costuma estar onde o sinal é ruim
-- **Expõe publicamente** o tempo médio de resolução por bairro e órgão
+O **Cidade Viva**:
+
+- **Agrupa reportes semelhantes**, evitando ocorrências duplicadas.
+- **Encaminha ao órgão responsável**, considerando sua área de cobertura.
+- **Registra cada mudança de status**, mantendo um histórico de acompanhamento.
+- **Funciona offline**, permitindo registrar problemas mesmo sem conexão com a internet.
+- **Promove a transparência pública**, apresentando indicadores sobre o tempo de resolução por bairro e órgão responsável.
 
 ---
 
 ## Funcionalidades
 
-| Área | O que tem |
+| Área | Recursos |
 |---|---|
-| 📱 **App mobile** | Reporte com foto e GPS, mapa, confirmação de problemas de terceiros, push de status, modo offline |
-| 🗺️ **Mapa** | Filtros, clusterização por zoom, mapa de calor, busca por endereço |
-| 🧠 **Inteligência** | Deduplicação em raio de 30 m (PostGIS), score de prioridade, roteamento por polígono |
-| 🖥️ **Painel do gestor** | Fila priorizada, troca de status, atribuição, exportação CSV/PDF, webhook e e-mail |
-| 🛡️ **Moderação** | Denúncias, reputação de usuários, detecção de foto reaproveitada, rate limit |
-| 🔎 **Transparência** | Página pública com estatísticas, rankings e API de dados abertos |
-| 🔐 **Privacidade** | Remoção de EXIF, desfoque de rostos e placas, exclusão de conta (LGPD) |
+| 📱 **Aplicativo mobile** | Registro com foto e GPS, mapa, confirmação de problemas de terceiros, notificações push e modo offline. |
+| 🗺️ **Mapa interativo** | Filtros, agrupamento de marcadores por zoom, mapa de calor e busca por endereço. |
+| 🧠 **Inteligência geoespacial** | Deduplicação em um raio de 30 metros com PostGIS, pontuação de prioridade e encaminhamento por polígonos geográficos. |
+| 🖥️ **Painel de gestão** | Fila priorizada, atualização de status, atribuição de responsáveis, exportação CSV/PDF, webhooks e e-mail. |
+| 🛡️ **Moderação** | Denúncias, reputação de usuários, detecção de imagens reutilizadas e limitação de requisições. |
+| 🔎 **Transparência pública** | Estatísticas, rankings e API de dados abertos. |
+| 🔐 **Privacidade** | Remoção de metadados EXIF, desfoque de rostos e placas e exclusão de contas, considerando a LGPD. |
 
-A lista completa, com prioridades e regras de negócio, está em [`docs/SPEC.md`](docs/SPEC.md).
+A especificação completa, incluindo prioridades e regras de negócio, está em [`docs/SPEC.md`](docs/SPEC.md).
 
 ---
 
 ## Arquitetura
 
-Monólito modular: um deploy, módulos com fronteiras claras.
+O Cidade Viva utiliza uma arquitetura de **monólito modular**: um único deploy, com módulos organizados por responsabilidades bem definidas.
 
+```text
+┌─────────────────┐   ┌─────────────────┐
+│  App RN (Expo)  │   │  Painel React   │
+└────────┬────────┘   └────────┬────────┘
+         │ HTTPS / SignalR     │
+         └──────────┬──────────┘
+            ┌───────▼────────┐
+            │ API ASP.NET    │── Hangfire (jobs)
+            │    (.NET 9)    │── SignalR (tempo real)
+            └───┬──────┬─────┘
+                │      │
+                │      └──────────► MinIO / S3 (fotos)
+                ├─────────────────► Redis (cache, rate limit)
+                ▼
+       PostgreSQL + PostGIS
 ```
-┌──────────────┐   ┌──────────────┐
-│ App RN (Expo)│   │ Painel React │
-└──────┬───────┘   └──────┬───────┘
-       │ HTTPS / SignalR  │
-       └────────┬─────────┘
-         ┌──────▼───────┐
-         │ API ASP.NET  │── Hangfire (jobs)
-         │   (.NET 9)   │── SignalR (tempo real)
-         └──┬─────┬───┬─┘
-            │     │   └──────► MinIO / S3 (fotos)
-            │     └──────────► Redis (cache, rate limit)
-            ▼
-   PostgreSQL + PostGIS
-```
 
-Decisões de arquitetura estão registradas em [`docs/adr`](docs/adr).
+As decisões de arquitetura estão registradas em [`docs/adr`](docs/adr).
 
-## Stack
+---
+
+## Stack tecnológica
 
 | Camada | Tecnologias |
 |---|---|
 | **Mobile** | React Native (Expo), TypeScript, TanStack Query, MapLibre, SQLite |
-| **Web** | React, Vite, TypeScript, MapLibre GL, Recharts, Tailwind |
+| **Web** | React, Vite, TypeScript, MapLibre GL, Recharts, Tailwind CSS |
 | **API** | .NET 9, ASP.NET Core, EF Core + NetTopologySuite, MediatR, FluentValidation |
 | **Dados** | PostgreSQL 16 + PostGIS, Redis |
-| **Jobs / tempo real** | Hangfire, SignalR |
-| **Storage** | MinIO (dev) / S3 compatível (prod) |
+| **Jobs e tempo real** | Hangfire, SignalR |
+| **Armazenamento** | MinIO (desenvolvimento) / S3 compatível (produção) |
 | **Observabilidade** | OpenTelemetry, Serilog |
 | **Testes** | xUnit, Testcontainers, Playwright, Jest |
 | **CI/CD** | GitHub Actions, Docker |
 
 ---
 
-## Como rodar
+## Como executar
 
 ### Pré-requisitos
 
-- [Docker](https://www.docker.com/) e Docker Compose
-- [.NET SDK 9](https://dotnet.microsoft.com/download)
-- [Node.js 20+](https://nodejs.org/) e npm
-- (Mobile) app **Expo Go** no celular ou um emulador Android/iOS
+- [Docker](https://www.docker.com/) e Docker Compose.
+- [.NET SDK 9](https://dotnet.microsoft.com/download).
+- [Node.js 20+](https://nodejs.org/) e npm.
+- Para o aplicativo mobile, Expo Go no celular ou um emulador Android/iOS.
 
-### Subir a infraestrutura e a API
+### 1. Clonar o repositório
+
+Substitua `SEU_USUARIO` pelo nome de usuário ou organização responsável pelo repositório no GitHub.
 
 ```bash
-git clone https://github.com/SEU_USUARIO/olhai.git
-cd olhai
+git clone https://github.com/SEU_USUARIO/cidade-viva.git
+cd cidade-viva
+```
 
-# Postgres+PostGIS, Redis, MinIO
+### 2. Subir a infraestrutura
+
+```bash
 docker compose up -d
-
-# Migrações e dados de exemplo (cidade fictícia)
-dotnet run --project tools/seed
-
-# API
-dotnet run --project src/Olhai.Api
 ```
 
-A API sobe em `http://localhost:5000` e a documentação OpenAPI em `http://localhost:5000/swagger`.
+O ambiente deverá disponibilizar os serviços configurados no Docker Compose, incluindo PostgreSQL com PostGIS, Redis e MinIO.
 
-### Painel web
-
-```bash
-cd apps/web
-npm install
-npm run dev
-```
-
-### App mobile
-
-```bash
-cd apps/mobile
-npm install
-npx expo start
-```
-
-### Variáveis de ambiente
-
-Copie os exemplos e ajuste:
+### 3. Configurar as variáveis de ambiente
 
 ```bash
 cp .env.example .env
@@ -140,83 +126,184 @@ cp apps/web/.env.example apps/web/.env
 cp apps/mobile/.env.example apps/mobile/.env
 ```
 
-> Nunca versione arquivos `.env` com segredos reais.
+Ajuste as configurações conforme o ambiente local.
+
+> Nunca versione arquivos `.env` com senhas, tokens ou outros segredos reais.
+
+### 4. Gerar dados de exemplo
+
+```bash
+dotnet run --project tools/seed
+```
+
+### 5. Executar a API
+
+```bash
+dotnet run --project src/CidadeViva.Api
+```
+
+Endereços previstos, dependendo da configuração da aplicação:
+
+- **API:** `http://localhost:5000`
+- **Swagger:** `http://localhost:5000/swagger`
+
+### 6. Executar o painel web
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+### 7. Executar o aplicativo mobile
+
+```bash
+cd apps/mobile
+npm install
+npx expo start
+```
 
 ---
 
 ## Estrutura do repositório
 
-```
-olhai/
+```text
+cidade-viva/
 ├── apps/
-│   ├── mobile/            # Expo (React Native)
-│   └── web/               # Painel do gestor + página pública
+│   ├── mobile/                       # Aplicativo React Native com Expo
+│   └── web/                          # Painel de gestão e página pública
+│
 ├── src/
-│   ├── Olhai.Api/
-│   ├── Olhai.Modules.Identity/
-│   ├── Olhai.Modules.Reports/
-│   ├── Olhai.Modules.Organizations/
-│   ├── Olhai.Modules.Moderation/
-│   ├── Olhai.Modules.Notifications/
-│   ├── Olhai.Modules.Analytics/
-│   └── Olhai.SharedKernel/
+│   ├── CidadeViva.Api/               # API ASP.NET Core
+│   ├── CidadeViva.Modules.Identity/  # Identidade e autenticação
+│   ├── CidadeViva.Modules.Reports/   # Registro de ocorrências
+│   ├── CidadeViva.Modules.Organizations/ # Órgãos e áreas de cobertura
+│   ├── CidadeViva.Modules.Moderation/ # Moderação e denúncias
+│   ├── CidadeViva.Modules.Notifications/ # Notificações
+│   ├── CidadeViva.Modules.Analytics/  # Indicadores e transparência
+│   └── CidadeViva.SharedKernel/      # Componentes compartilhados
+│
 ├── tests/
-│   ├── Olhai.UnitTests/
-│   └── Olhai.IntegrationTests/
-├── tools/seed/            # gerador de dados de exemplo
-├── docs/                  # SPEC, ADRs, arquitetura
-└── docker-compose.yml
+│   ├── CidadeViva.UnitTests/         # Testes unitários
+│   └── CidadeViva.IntegrationTests/  # Testes de integração
+│
+├── tools/
+│   └── seed/                         # Gerador de dados de exemplo
+│
+├── docs/
+│   ├── SPEC.md                       # Especificação funcional
+│   └── adr/                          # Decisões de arquitetura
+│
+├── docker-compose.yml
+├── .env.example
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+├── LICENSE
+└── README.md
 ```
+
+---
 
 ## Testes
 
+### Back-end
+
 ```bash
-# Back-end (unitários + integração com Testcontainers)
 dotnet test
+```
 
-# Web (E2E)
-cd apps/web && npx playwright test
+### Painel web
 
-# Mobile
-cd apps/mobile && npm test
+```bash
+cd apps/web
+npx playwright test
+```
+
+### Aplicativo mobile
+
+```bash
+cd apps/mobile
+npm test
 ```
 
 ---
 
 ## Roadmap
 
-- [ ] **Fase 0:** fundação (repo, Docker Compose, CI)
-- [ ] **Fase 1:** MVP (auth, criar reporte, mapa, painel básico)
-- [ ] **Fase 2:** núcleo inteligente (deduplicação, score, roteamento, push, página pública)
-- [ ] **Fase 3:** robustez (offline-first, moderação, LGPD, observabilidade)
-- [ ] **Fase 4:** diferenciais (classificação por imagem, desfoque de rostos, multi-cidade, API aberta)
+### Fase 0: Fundação
+- [ ] Estrutura inicial do repositório.
+- [ ] Configuração do Docker Compose.
+- [ ] Pipeline de CI com GitHub Actions.
 
-Detalhes em [`docs/SPEC.md`](docs/SPEC.md).
+### Fase 1: MVP
+- [ ] Autenticação.
+- [ ] Registro de ocorrências.
+- [ ] Mapa interativo.
+- [ ] Painel básico de gestão.
+
+### Fase 2: Núcleo inteligente
+- [ ] Deduplicação geoespacial.
+- [ ] Pontuação de prioridade.
+- [ ] Encaminhamento por área de cobertura.
+- [ ] Notificações push.
+- [ ] Página pública de transparência.
+
+### Fase 3: Robustez
+- [ ] Funcionamento offline.
+- [ ] Moderação de conteúdo.
+- [ ] Recursos de privacidade e conformidade com a LGPD.
+- [ ] Observabilidade.
+
+### Fase 4: Diferenciais
+- [ ] Classificação de ocorrências por imagem.
+- [ ] Desfoque de rostos e placas.
+- [ ] Suporte a múltiplas cidades.
+- [ ] API de dados abertos.
+
+Consulte [`docs/SPEC.md`](docs/SPEC.md) para conhecer os requisitos e as regras de negócio detalhadas.
 
 ---
 
 ## Como contribuir
 
-Contribuições são bem-vindas, de código a documentação e testes.
+Contribuições são bem-vindas, seja por meio de código, documentação, testes ou sugestões de melhorias.
 
-1. Leia o [`CONTRIBUTING.md`](CONTRIBUTING.md)
-2. Escolha uma issue com o rótulo `good first issue`
-3. Abra um PR pequeno e focado, seguindo [Conventional Commits](https://www.conventionalcommits.org/pt-br/)
+1. Leia o [`CONTRIBUTING.md`](CONTRIBUTING.md).
+2. Escolha uma issue com o rótulo `good first issue`.
+3. Desenvolva uma solução pequena e focada.
+4. Abra um Pull Request seguindo [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 
 Ao participar, você concorda em seguir o [Código de Conduta](CODE_OF_CONDUCT.md).
 
+---
+
 ## Privacidade e LGPD
 
-O Olhaí coleta apenas os dados necessários, remove metadados sensíveis das fotos e permite exclusão de conta e exportação de dados. Se uma foto sua aparece na plataforma e você quer removê-la, abra uma issue ou escreva para o contato do projeto.
+O Cidade Viva foi concebido para coletar apenas os dados necessários ao funcionamento da plataforma e reduzir a exposição de informações sensíveis.
+
+Os recursos previstos incluem:
+
+- Remoção de metadados EXIF das fotografias.
+- Desfoque de rostos e placas.
+- Controles para acesso e tratamento de dados pessoais.
+- Exclusão de contas e exportação de dados.
+
+A implementação deverá considerar os requisitos aplicáveis da Lei Geral de Proteção de Dados (LGPD).
+
+---
 
 ## Licença
 
-Distribuído sob a licença **AGPL-3.0**. Veja [`LICENSE`](LICENSE).
+Distribuído sob a licença **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+Consulte o arquivo [`LICENSE`](LICENSE) para conhecer os termos completos.
 
 ---
 
 <div align="center">
 
-Feito para tornar a cidade um pouco mais visível. 👀
+**Feito para tornar a cidade um pouco mais visível. 🏙️**
+
+*Cidade Viva. Uma cidade melhor começa quando alguém decide não ignorar o problema.*
 
 </div>
